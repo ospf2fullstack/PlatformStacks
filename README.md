@@ -7,6 +7,7 @@ Engineering deployment documentation and artifacts for various platforms and tec
 | Platform | Description | Documentation |
 |----------|-------------|---------------|
 | [Strimzi Kafka](/strimzi-kafka/README.md) | Apache Kafka on Kubernetes operator | [Full Docs](/strimzi-kafka/README.md) |
+| [Apache Kafka](/apache-kafka/README.md) | Production Kafka with KRaft mode on Kubernetes via Strimzi | [Full Docs](/apache-kafka/README.md) |
 
 ## Getting Started
 
