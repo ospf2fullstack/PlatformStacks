@@ -1,0 +1,133 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: transformer-training
+  namespace: ml-training
+  labels:
+    app: transformer-trainer
+    app.kubernetes.io/part-of: transformer-platform
+spec:
+  parallelism: 4
+  completions: 4
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: transformer-trainer
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: trainer
+          image: transformer-trainer:latest
+          command:
+            - torchrun
+            - --nproc_per_node=1
+            - --nnodes=4
+            - --node_rank=$(JOB_COMPLETION_INDEX)
+            - --master_addr=transformer-training-0
+            - --master_port=29500
+            - /app/train.py
+            - --config=/app/configs/training-config.yaml
+          env:
+            - name: NCCL_DEBUG
+              value: "INFO"
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+          resources:
+            requests:
+              memory: "32Gi"
+              cpu: "8"
+              nvidia.com/gpu: "1"
+            limits:
+              memory: "64Gi"
+              cpu: "16"
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: model-storage
+              mountPath: /models
+            - name: data-storage
+              mountPath: /data
+            - name: config
+              mountPath: /app/configs
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: model-pvc
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: training-data-pvc
+        - name: config
+          configMap:
+            name: training-config
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: training-config
+  namespace: ml-training
+data:
+  training-config.yaml: |
+    model:
+      d_model: 512
+      n_heads: 8
+      n_layers: 6
+      d_ff: 2048
+      dropout: 0.1
+      max_seq_len: 512
+      vocab_size: 32000
+      activation: "gelu"
+      norm_type: "rmsnorm"
+      pos_encoding: "rope"
+    
+    training:
+      batch_size: 32
+      learning_rate: 1.0e-4
+      warmup_steps: 4000
+      max_steps: 100000
+      grad_accum_steps: 4
+      mixed_precision: true
+      precision: "bf16"
+      gradient_clip_norm: 1.0
+      weight_decay: 0.01
+      optimizer: "adamw"
+      scheduler: "cosine"
+      save_every: 5000
+      eval_every: 1000
+      log_every: 100
+    
+    distributed:
+      backend: "nccl"
+      world_size: 4
+      find_unused_parameters: false
+    
+    data:
+      train_path: "/data/train.jsonl"
+      val_path: "/data/val.jsonl"
+      tokenizer: "bpe"
+      max_length: 512
+    
+    checkpointing:
+      output_dir: "/models/checkpoints"
+      save_total_limit: 5
+      resume_from: null
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transformer-training-0
+  namespace: ml-training
+spec:
+  selector:
+    app: transformer-trainer
+    job-name: transformer-training
+  ports:
+    - port: 29500
+      targetPort: 29500
+      name: nccl
+  clusterIP: None
