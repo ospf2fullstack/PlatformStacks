@@ -1,35 +1,42 @@
 # PlatformStacks
 
-Engineering deployment documentation, Helm charts, Terraform modules, Kubernetes manifests, and automation scripts for platform technologies.
+Engineering deployment documentation, Helm charts, Terraform modules, and scripts for platform technologies explored on [garyinnerarity.com](https://garyinnerarity.com).
 
-Each platform directory contains everything needed to deploy, configure, and operate a specific technology stack in production Kubernetes environments.
+Each subdirectory contains complete deployment documentation for a specific platform, including quickstart guides, configuration references, and production-ready artifacts.
 
 ## Platforms
 
 | Platform | Description | Documentation |
 |----------|-------------|---------------|
-| [Strimzi Kafka](./strimzi-kafka/README.md) | Apache Kafka on Kubernetes via Strimzi operator | [Full Docs](./strimzi-kafka/README.md) |
-| [Apache Synapse](./apache-synapse/README.md) | Enterprise Service Bus (ESB) and mediation engine | [Full Docs](./apache-synapse/README.md) |
-| [Transformers in AI Systems](./transformers-in-ai-systems/README.md) | Transformer architecture training and inference on Kubernetes with GPU scheduling | [Full Docs](./transformers-in-ai-systems/README.md) |
+| [Strimzi Kafka](./strimzi-kafka/README.md) | Apache Kafka on Kubernetes via Strimzi Operator | [Full Docs](./strimzi-kafka/README.md) |
+| [Apache Synapse](./apache-synapse/README.md) | Enterprise Service Bus for message mediation | [Full Docs](./apache-synapse/README.md) |
+| [Kafka Streaming](./kafka-streaming/README.md) | Apache Kafka distributed streaming platform | [Full Docs](./kafka-streaming/README.md) |
+| [Transformers in AI](./transformers-in-ai-systems/README.md) | Transformer architecture for AI/ML systems | [Full Docs](./transformers-in-ai-systems/README.md) |
+| [Tiny LLM Training](./tiny-llm-training/README.md) | Train small language models (10-30M params) from scratch | [Full Docs](./tiny-llm-training/README.md) |
 
-## Repository Structure
+## Structure
+
+Each platform directory follows a standard layout:
 
 ```
-PlatformStacks/
-├── README.md                    # This file
-├── strimzi-kafka/               # Strimzi Kafka deployment
-├── apache-synapse/              # Apache Synapse ESB deployment
-└── transformers-in-ai-systems/  # Transformer ML platform
-    ├── README.md                # Platform documentation
-    ├── kubernetes/              # K8s manifests (jobs, services, namespaces)
-    ├── scripts/                 # Automation (train.py, validate.sh)
-    └── helm/                    # Helm charts for inference serving
+/{platform-name}/
+├── README.md              # Overview, prerequisites, quickstart
+├── configs/               # Configuration files (YAML, TOML, etc.)
+├── helm/                  # Helm charts for Kubernetes deployment
+├── terraform/             # Terraform modules (if applicable)
+├── kubernetes/            # Raw K8s manifests (if applicable)
+├── scripts/               # Automation scripts (install, validate, teardown)
+└── docs/                  # Extended documentation and ADRs
 ```
 
 ## Usage
 
-Each platform directory is self-contained. Navigate to the desired platform and follow its README for deployment instructions.
+1. Navigate to the platform directory you're interested in
+2. Follow the README.md for prerequisites and quickstart
+3. Customize configuration files for your environment
+4. Deploy using the provided Helm charts or scripts
 
 ## Related
 
-- Blog posts with deep-dive explanations: [garyinnerarity.com/blog](https://garyinnerarity.com/blog)
+- **Blog**: [garyinnerarity.com/blog](https://garyinnerarity.com/blog/) — Engineering write-ups for each platform
+- **Author**: Gary Innerarity — Solutions Engineer & MBA
