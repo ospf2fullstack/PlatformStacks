@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  synapse:
+    image: synapse:latest
+    container_name: apache-synapse
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./config:/opt/synapse/config
+      - synapse-data:/opt/synapse/repository
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+    networks:
+      - synapse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  synapse-data:
+
+networks:
+  synapse-network:
+    driver: bridge
