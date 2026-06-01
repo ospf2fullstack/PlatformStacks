@@ -1,0 +1,44 @@
+# Tiny LLM Training Helm Values
+# Default configuration for training a 10M parameter GPT model
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ospf2fullstack/tiny-llm-training
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    nvidia.com/gpu: 1
+    memory: "8Gi"
+    cpu: "4"
+  requests:
+    memory: "4Gi"
+    cpu: "2"
+
+training:
+  config: nano-gpt
+  maxSteps: 5000
+  batchSize: 32
+  learningRate: "3e-4"
+  mixedPrecision: true
+  device: cuda
+
+storage:
+  checkpointPVC:
+    enabled: true
+    size: 10Gi
+    storageClass: standard
+  dataPVC:
+    enabled: true
+    size: 5Gi
+    storageClass: standard
+
+nodeSelector:
+  gpu: "true"
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
