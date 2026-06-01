@@ -1,0 +1,20 @@
+apiVersion: v2
+name: apache-kafka
+description: Production-grade Apache Kafka on Kubernetes via Strimzi Operator (KRaft mode)
+type: application
+version: 1.0.0
+appVersion: "3.9.0"
+dependencies:
+  - name: strimzi-kafka-operator
+    version: "0.42.0"
+    repository: "https://strimzi.io/charts/"
+    condition: strimzi.enabled
+keywords:
+  - kafka
+  - streaming
+  - event-driven
+  - strimzi
+  - kubernetes
+maintainers:
+  - name: Gary Innerarity
+    url: https://garyinnerarity.com
