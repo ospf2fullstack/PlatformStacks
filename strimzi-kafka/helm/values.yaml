@@ -1,0 +1,136 @@
+# Strimzi Kafka Operator Helm Values
+# https://strimzi.io/documentation/
+
+## Operator Configuration
+operator:
+  # Namespace to deploy the operator in
+  namespace: strimzi-operator
+  
+  # Operator image configuration
+  image:
+    repository: quay.io/strimzi/operator
+    tag: 0.48.0
+    pullPolicy: IfNotPresent
+  
+  # Resource limits for the operator
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  
+  # Log level configuration
+  logLevel: INFO
+
+## Feature Gates
+# Feature gates control experimental features
+featureGates:
+  # Enable Kafka Node Pools (enabled by default in 0.46+)
+  # NodePools: true
+  
+  # Enable KRaft mode (enabled by default in 0.46+)
+  # UseKRaft: true
+
+## Kafka Cluster Default Configuration
+kafka:
+  # Kafka version
+  version: 3.9.0
+  
+  # Number of Kafka brokers
+  replicas: 3
+  
+  # Resources configuration
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 500m
+    limits:
+      memory: 4Gi
+      cpu: 1000m
+  
+  # Storage configuration
+  storage:
+    type: ephemeral
+  
+  # Listeners configuration
+  listeners:
+    - name: plain
+      port: 9092
+      type: internal
+      tls: false
+    - name: tls
+      port: 9093
+      type: internal
+      tls: true
+
+## ZooKeeper Configuration
+zookeeper:
+  replicas: 3
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 250m
+    limits:
+      memory: 2Gi
+      cpu: 500m
+  storage:
+    type: ephemeral
+
+## Entity Operator Configuration
+entityOperator:
+  # Enable Topic Operator
+  topicOperator: {}
+  
+  # Enable User Operator
+  userOperator: {}
+  
+  # Resource configuration
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 250m
+
+## Monitoring Configuration
+monitoring:
+  # Enable Prometheus metrics
+  enablePrometheusMetrics: true
+  
+  # Kafka Exporter configuration
+  kafkaExporter:
+    enabled: true
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
+
+## Cruise Control Configuration
+cruiseControl:
+  enabled: true
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 200m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+## Network Policy
+networkPolicy:
+  enabled: true
+
+## TLS/SSL Configuration
+tls:
+  # Automatically generate CA certificates
+  generateCa: true
+  # Automatically generate broker certificates
+  generateBrokerCa: true
+  # Automatically generate user certificates
+  generateUserCa: true
