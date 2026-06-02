@@ -1,0 +1,15 @@
+apiVersion: v2
+name: tiny-llm-training
+description: Helm chart for training a Tiny LLM (10-30M parameters) on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - llm
+  - machine-learning
+  - transformer
+  - training
+  - pytorch
+maintainers:
+  - name: Gary Innerarity
+    url: https://garyinnerarity.com

@@ -1,0 +1,52 @@
+model:
+  vocab_size: 50257
+  d_model: 256
+  n_layers: 4
+  n_heads: 4
+  max_seq_len: 512
+  dropout: 0.1
+  use_rope: true
+  use_rmsnorm: true
+  use_swiglu: true
+  weight_tying: true
+  bias: false
+
+training:
+  batch_size: 32
+  learning_rate: 3.0e-4
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  max_steps: 5000
+  warmup_steps: 500
+  lr_scheduler: cosine
+  grad_clip: 1.0
+  mixed_precision: true
+  precision: bf16
+  gradient_accumulation: 4
+  eval_interval: 250
+  save_interval: 1000
+  log_interval: 50
+
+data:
+  dataset: tinyshakespeare
+  tokenizer: bpe
+  tokenizer_vocab_size: 50257
+  train_split: 0.9
+  shuffle: true
+  num_workers: 4
+
+inference:
+  temperature: 0.8
+  top_k: 50
+  top_p: 0.95
+  max_new_tokens: 200
+  repetition_penalty: 1.1
+  use_kv_cache: true
+
+system:
+  device: auto
+  seed: 42
+  compile: true
+  output_dir: checkpoints/
+  wandb: false
