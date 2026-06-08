@@ -1,0 +1,74 @@
+model:
+  type: routenet-fermi
+  hidden_dim: 128
+  num_message_passing_steps: 8
+  readout_type: mlp
+  readout_layers: 2
+  dropout: 0.1
+  activation: relu
+  normalize_features: true
+
+  # Flow encoder
+  flow_encoder:
+    input_features: [size, path_length, traffic_model_id]
+    hidden_dim: 64
+    layers: 2
+
+  # Queue encoder
+  queue_encoder:
+    input_features: [buffer_size, priority, weight, scheduling_policy_id]
+    hidden_dim: 64
+    layers: 2
+
+  # Link encoder
+  link_encoder:
+    input_features: [capacity, propagation_delay]
+    hidden_dim: 64
+    layers: 2
+
+training:
+  epochs: 200
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 1.0e-5
+  scheduler: cosine_warmup
+  warmup_epochs: 10
+  min_lr: 1.0e-6
+  gradient_clip: 1.0
+  early_stopping_patience: 20
+
+  # Loss weights for multi-task prediction
+  loss_weights:
+    delay: 1.0
+    jitter: 0.5
+    packet_loss: 0.5
+    fct_slowdown: 1.0
+
+  # Augmentation
+  augmentation:
+    topology_dropout: 0.1
+    traffic_noise: 0.05
+
+data:
+  topology_types: [fat-tree, leaf-spine]
+  max_nodes: 512
+  max_flows_per_scenario: 5000
+  traffic_models: [poisson, on-off, pareto, constant-bit-rate]
+  scheduling_policies: [FIFO, WFQ, SP, DRR]
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  num_workers: 4
+
+inference:
+  batch_size: 64
+  compile_model: true
+  device: auto  # auto, cpu, cuda
+  precision: float32  # float32, float16, bfloat16
+
+logging:
+  tensorboard: true
+  log_dir: logs/
+  checkpoint_dir: checkpoints/
+  save_every_epochs: 10
+  log_every_steps: 100
