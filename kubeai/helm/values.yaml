@@ -1,0 +1,120 @@
+# KubeAI Helm Values
+# Reference: https://www.kubeai.org/
+# Chart: kubeai/kubeai
+
+# -- Operator Configuration --
+replicaCount: 1
+
+image:
+  repository: ghcr.io/kubeai-project/kubeai
+  pullPolicy: IfNotPresent
+  # tag: "v0.23.2"  # Pin to specific version for production
+
+# -- Proxy Configuration --
+proxy:
+  replicas: 2
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2"
+      memory: "1Gi"
+
+# -- Cache Profiles --
+# Configure how models are stored/cached on the cluster
+cacheProfiles:
+  default:
+    storageClassName: "standard"
+    accessModes:
+      - ReadWriteOnce
+    volumeSize: "100Gi"
+  # For shared storage (EFS/NFS) enabling multi-node access
+  shared:
+    storageClassName: "efs-sc"
+    accessModes:
+      - ReadWriteMany
+    volumeSize: "500Gi"
+
+# -- Resource Profiles --
+# Named profiles that models can reference
+resourceProfiles:
+  # CPU-only profiles
+  cpu:1:
+    requests:
+      cpu: "1"
+      memory: "4Gi"
+    limits:
+      cpu: "2"
+      memory: "8Gi"
+  cpu:4:
+    requests:
+      cpu: "4"
+      memory: "16Gi"
+    limits:
+      cpu: "8"
+      memory: "32Gi"
+  # NVIDIA GPU profiles
+  nvidia-gpu-l4:1:
+    requests:
+      cpu: "4"
+      memory: "24Gi"
+    limits:
+      cpu: "8"
+      memory: "48Gi"
+      nvidia.com/gpu: "1"
+  nvidia-gpu-a100:1:
+    requests:
+      cpu: "8"
+      memory: "80Gi"
+    limits:
+      cpu: "16"
+      memory: "160Gi"
+      nvidia.com/gpu: "1"
+  nvidia-gpu-h100:1:
+    requests:
+      cpu: "8"
+      memory: "80Gi"
+    limits:
+      cpu: "16"
+      memory: "160Gi"
+      nvidia.com/gpu: "1"
+
+# -- Model Autoscaling Defaults --
+autoscaling:
+  # Default target requests per replica for autoscaling decisions
+  targetRequests: 100
+  # Default scale-down delay (seconds)
+  scaleDownDelaySeconds: 30
+  # Polling interval for metrics
+  stateCheckIntervalSeconds: 10
+
+# -- Messaging Integration (optional) --
+messaging:
+  enabled: false
+  # provider: kafka
+  # kafka:
+  #   brokers: ["kafka-broker:9092"]
+  #   topic: "kubeai-requests"
+
+# -- Monitoring --
+serviceMonitor:
+  enabled: false
+  # interval: 30s
+  # namespace: monitoring
+
+# -- Ingress (optional) --
+ingress:
+  enabled: false
+  # className: nginx
+  # hosts:
+  #   - host: ai.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
+
+# -- Node Affinity (optional) --
+# Ensure operator runs on control plane or non-GPU nodes
+nodeSelector: {}
+tolerations: []
+affinity: {}
