@@ -1,0 +1,91 @@
+# KubeAI Models Helm Values
+# Reference: https://www.kubeai.org/
+# Chart: kubeai/models
+#
+# This file configures which AI models to deploy via KubeAI.
+# Models are defined in the catalog and enabled/disabled as needed.
+
+catalog:
+  # -- CPU Models (no GPU required) --
+
+  # DeepSeek R1 1.5B - Reasoning model via Ollama
+  deepseek-r1-1.5b-cpu:
+    enabled: true
+    features: [TextGeneration]
+    url: 'ollama://deepseek-r1:1.5b'
+    engine: OLlama
+    minReplicas: 1
+    maxReplicas: 3
+    resourceProfile: 'cpu:1'
+
+  # Qwen2 500M - Lightweight text generation
+  qwen2-500m-cpu:
+    enabled: true
+    features: [TextGeneration]
+    url: 'ollama://qwen2:0.5b'
+    engine: OLlama
+    minReplicas: 0  # Scale-to-zero enabled
+    maxReplicas: 2
+    resourceProfile: 'cpu:1'
+
+  # Nomic Embed Text - Text embeddings
+  nomic-embed-text-cpu:
+    enabled: true
+    features: [TextEmbedding]
+    url: 'ollama://nomic-embed-text'
+    engine: OLlama
+    minReplicas: 1
+    maxReplicas: 3
+    resourceProfile: 'cpu:1'
+
+  # -- GPU Models (NVIDIA GPU required) --
+
+  # Llama 3.1 8B Instruct via vLLM
+  llama-3.1-8b-instruct-gpu:
+    enabled: false  # Enable when GPU available
+    features: [TextGeneration]
+    url: 'hf://meta-llama/Llama-3.1-8B-Instruct'
+    engine: VLLM
+    args:
+      - --dtype=float16
+      - --max-model-len=32768
+      - --gpu-memory-utilization=0.90
+      - --disable-log-requests
+    minReplicas: 0
+    maxReplicas: 4
+    targetRequests: 50
+    resourceProfile: 'nvidia-gpu-l4:1'
+
+  # DeepSeek R1 7B via vLLM (GPU)
+  deepseek-r1-7b-gpu:
+    enabled: false
+    features: [TextGeneration]
+    url: 'hf://deepseek-ai/DeepSeek-R1-Distill-Qwen-7B'
+    engine: VLLM
+    args:
+      - --dtype=float16
+      - --max-model-len=16384
+      - --gpu-memory-utilization=0.85
+    minReplicas: 0
+    maxReplicas: 3
+    resourceProfile: 'nvidia-gpu-l4:1'
+
+  # FasterWhisper - Speech-to-Text
+  whisper-large-v3:
+    enabled: false
+    features: [SpeechToText]
+    url: 'hf://Systran/faster-whisper-large-v3'
+    engine: FasterWhisper
+    minReplicas: 0
+    maxReplicas: 2
+    resourceProfile: 'nvidia-gpu-l4:1'
+
+  # BGE Reranker - Cross-encoder reranking
+  bge-reranker-v2:
+    enabled: false
+    features: [Reranking]
+    url: 'hf://BAAI/bge-reranker-v2-m3'
+    engine: Infinity
+    minReplicas: 0
+    maxReplicas: 2
+    resourceProfile: 'cpu:4'
