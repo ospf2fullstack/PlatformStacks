@@ -9,6 +9,7 @@ Each platform directory contains complete deployment guides, configuration refer
 | Platform | Description | Documentation |
 |----------|-------------|---------------|
 | [ML Network Simulation](ml-network-simulation/README.md) | ML models that simulate network infrastructure behavior for traffic prediction, failure detection, and routing optimization | [Full Docs](ml-network-simulation/README.md) |
+| [KubeAI](kubeai/README.md) | AI Inference Operator for Kubernetes — deploy and scale vLLM, Ollama, FasterWhisper with scale-to-zero and prefix-aware load balancing | [Full Docs](kubeai/README.md) |
 
 ## Repository Structure
 
