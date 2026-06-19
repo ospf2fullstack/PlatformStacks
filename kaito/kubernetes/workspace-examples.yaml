@@ -1,0 +1,66 @@
+# KAITO Workspace Example: Phi-4 Mini
+# Deploys Microsoft Phi-4-mini-instruct model
+# Requires: 1x NVIDIA V100 or better GPU
+---
+apiVersion: kaito.sh/v1beta1
+kind: Workspace
+metadata:
+  name: workspace-phi-4-mini
+  namespace: default
+  labels:
+    app: kaito-inference
+    model: phi-4-mini
+spec:
+  resource:
+    # For BYO nodes: use label selector only
+    # For auto-provisioning: specify instanceType
+    instanceType: "Standard_NC6s_v3"  # 1x V100 (Azure)
+    # instanceType: "g5.xlarge"       # 1x A10G (AWS)
+    labelSelector:
+      matchLabels:
+        apps: phi-4-mini
+  inference:
+    preset:
+      name: phi-4-mini-instruct
+---
+# KAITO Workspace Example: Llama 3.2 11B Vision
+# Requires: 1x NVIDIA A100 GPU
+apiVersion: kaito.sh/v1beta1
+kind: Workspace
+metadata:
+  name: workspace-llama-3-2-11b
+  namespace: default
+  labels:
+    app: kaito-inference
+    model: llama-3-2-11b
+spec:
+  resource:
+    instanceType: "Standard_NC24ads_A100_v4"  # 1x A100 (Azure)
+    # instanceType: "g5.12xlarge"              # 4x A10G (AWS)
+    labelSelector:
+      matchLabels:
+        apps: llama-3-2-11b
+  inference:
+    preset:
+      name: llama-3.2-11b-vision-instruct
+---
+# KAITO Workspace Example: Custom HuggingFace Model (BYO)
+# Deploy any vLLM-supported model from HuggingFace
+apiVersion: kaito.sh/v1beta1
+kind: Workspace
+metadata:
+  name: workspace-custom-model
+  namespace: default
+  labels:
+    app: kaito-inference
+    model: custom
+spec:
+  resource:
+    instanceType: "Standard_NC24ads_A100_v4"
+    labelSelector:
+      matchLabels:
+        apps: custom-model
+  inference:
+    preset:
+      name: "microsoft/Phi-3-medium-128k-instruct"
+      accessMode: public
