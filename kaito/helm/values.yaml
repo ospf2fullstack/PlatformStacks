@@ -1,0 +1,44 @@
+# KAITO Workspace Helm Values
+# Override defaults for production deployment
+
+clusterName: "production-cluster"
+
+featureGates:
+  # Set to true if using pre-existing GPU nodes (BYO)
+  # Set to false for auto-provisioning
+  disableNodeAutoProvisioning: false
+  enableKEDAScaler: true
+
+controller:
+  replicas: 1
+  resources:
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+  
+  # Logging configuration
+  logLevel: "info"
+
+# Node affinity for KAITO controller (run on non-GPU nodes)
+nodeSelector:
+  kubernetes.io/os: linux
+
+tolerations: []
+
+# Service account configuration
+serviceAccount:
+  create: true
+  name: "kaito-workspace"
+  annotations: {}
+    # Azure: add workload identity annotation
+    # azure.workload.identity/client-id: "<CLIENT_ID>"
+
+# Metrics and monitoring
+metrics:
+  enabled: true
+  port: 8080
+  serviceMonitor:
+    enabled: false  # Enable if using Prometheus Operator
