@@ -1,0 +1,84 @@
+---
+# Example LLMService: Qwen3-8B with scale-to-zero
+apiVersion: serving.hearth.dev/v1alpha1
+kind: LLMService
+metadata:
+  name: qwen3-8b
+  namespace: ai
+spec:
+  model:
+    source:
+      uri: modelscope://Qwen/Qwen3-8B-Instruct
+  runtime:
+    selector:
+      vendor: [nvidia, ascend]
+  resources:
+    accelerators: 1
+  scaling:
+    min: 0
+    max: 3
+    metric: queueDepth
+    target: 10
+    scaleDownStabilization: 5m
+  coldStart:
+    mode: buffer
+    activationTimeout: 300s
+---
+# Example LLMService: DeepSeek for code tasks
+apiVersion: serving.hearth.dev/v1alpha1
+kind: LLMService
+metadata:
+  name: deepseek-coder
+  namespace: ai
+spec:
+  model:
+    source:
+      uri: hf://deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+  runtime:
+    selector:
+      vendor: [nvidia]
+  resources:
+    accelerators: 1
+  scaling:
+    min: 0
+    max: 2
+    metric: queueDepth
+    target: 5
+    scaleDownStabilization: 3m
+  coldStart:
+    mode: reject
+    activationTimeout: 120s
+---
+# InferenceRuntime: NVIDIA vLLM backend
+apiVersion: serving.hearth.dev/v1alpha1
+kind: InferenceRuntime
+metadata:
+  name: vllm-nvidia
+spec:
+  family: vllm
+  vendor: nvidia
+  priority: 100
+  container:
+    image: vllm/vllm-openai:latest
+    args:
+      - --served-model-name=$(MODEL_NAME)
+      - --model=$(MODEL_PATH)
+      - --max-model-len=8192
+      - --gpu-memory-utilization=0.9
+  accelerator:
+    resourceName: nvidia.com/gpu
+    sharing:
+      supported: false
+  probes:
+    readiness:
+      path: /health
+      port: 8000
+    startup:
+      path: /health
+      port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 30
+  metrics:
+    path: /metrics
+    port: 8000

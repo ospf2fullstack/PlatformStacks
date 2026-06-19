@@ -1,0 +1,65 @@
+# Hearth Helm Values
+# Override these values for your environment
+
+controller:
+  replicas: 1
+  image:
+    repository: ghcr.io/hearth-project/hearth-controller
+    tag: v0.1.0
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+gateway:
+  image:
+    repository: ghcr.io/hearth-project/hearth-gateway
+    tag: v0.1.0
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  # SSE heartbeat interval during cold start (seconds)
+  heartbeatInterval: 5
+  # Max time to wait for backend before timeout (seconds)
+  coldStartTimeout: 300
+
+modelCache:
+  enabled: true
+  storageClass: ""  # Use cluster default
+  size: 50Gi
+  accessMode: ReadWriteOnce
+
+# KEDA dependency
+keda:
+  enabled: false  # Set true to install KEDA as subchart
+
+# Namespace for LLMService workloads
+workloadNamespace: ai
+
+# Default InferenceRuntime for NVIDIA
+defaultRuntime:
+  nvidia:
+    enabled: true
+    image: vllm/vllm-openai:latest
+    acceleratorResource: nvidia.com/gpu
+  ascend:
+    enabled: false
+    image: vllm-ascend/vllm-ascend:latest
+    acceleratorResource: huawei.com/Ascend910
+
+# Observability
+monitoring:
+  serviceMonitor:
+    enabled: false
+    namespace: monitoring
+  grafanaDashboard:
+    enabled: false

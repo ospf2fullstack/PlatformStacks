@@ -10,6 +10,7 @@ Each platform directory contains complete deployment guides, configuration refer
 |----------|-------------|---------------|
 | [ML Network Simulation](ml-network-simulation/README.md) | ML models that simulate network infrastructure behavior for traffic prediction, failure detection, and routing optimization | [Full Docs](ml-network-simulation/README.md) |
 | [KubeAI](kubeai/README.md) | AI Inference Operator for Kubernetes — deploy and scale vLLM, Ollama, FasterWhisper with scale-to-zero and prefix-aware load balancing | [Full Docs](kubeai/README.md) |
+| [Hearth](hearth-kubernetes-llm-serving/README.md) | Declarative scale-to-zero LLM serving on Kubernetes — one CRD + KEDA, vendor-neutral across NVIDIA & Ascend | [Full Docs](hearth-kubernetes-llm-serving/README.md) |
 
 ## Repository Structure
 
