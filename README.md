@@ -12,6 +12,7 @@ Each platform directory contains complete deployment guides, configuration refer
 | [KubeAI](kubeai/README.md) | AI Inference Operator for Kubernetes — deploy and scale vLLM, Ollama, FasterWhisper with scale-to-zero and prefix-aware load balancing | [Full Docs](kubeai/README.md) |
 | [Hearth](hearth-kubernetes-llm-serving/README.md) | Declarative scale-to-zero LLM serving on Kubernetes — one CRD + KEDA, vendor-neutral across NVIDIA & Ascend | [Full Docs](hearth-kubernetes-llm-serving/README.md) |
 | [KAITO](kaito/README.md) | Kubernetes AI Toolchain Operator — CNCF Sandbox project that automates LLM inference, fine-tuning, and RAG with automatic GPU node provisioning via Karpenter | [Full Docs](kaito/README.md) |
+| [Roboflow Supervision](roboflow-supervision/README.md) | Model-agnostic Python CV toolkit — unified Detections API, 20+ annotators, object tracking, zone counting, and dataset management for production computer vision | [Full Docs](roboflow-supervision/README.md) |
 
 ## Repository Structure
 
