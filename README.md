@@ -13,6 +13,7 @@ Each platform directory contains complete deployment guides, configuration refer
 | [Hearth](hearth-kubernetes-llm-serving/README.md) | Declarative scale-to-zero LLM serving on Kubernetes — one CRD + KEDA, vendor-neutral across NVIDIA & Ascend | [Full Docs](hearth-kubernetes-llm-serving/README.md) |
 | [KAITO](kaito/README.md) | Kubernetes AI Toolchain Operator — CNCF Sandbox project that automates LLM inference, fine-tuning, and RAG with automatic GPU node provisioning via Karpenter | [Full Docs](kaito/README.md) |
 | [Roboflow Supervision](roboflow-supervision/README.md) | Model-agnostic Python CV toolkit — unified Detections API, 20+ annotators, object tracking, zone counting, and dataset management for production computer vision | [Full Docs](roboflow-supervision/README.md) |
+| [LiteLLM](litellm/README.md) | Unified LLM API Gateway — single OpenAI-compatible endpoint for 100+ providers with virtual keys, spend tracking, latency-based routing, and componentized Kubernetes deployment | [Full Docs](litellm/README.md) |
 
 ## Repository Structure
 

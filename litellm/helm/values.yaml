@@ -1,0 +1,180 @@
+# LiteLLM Helm Chart Values - Production Configuration
+# Componentized deployment (gateway/backend/ui as separate services)
+
+# -- Database configuration (external PostgreSQL required)
+database:
+  useExisting: true
+  deployStandalone: false
+  url: "os.environ/DATABASE_URL"
+  reader:
+    host: ""  # Set to read replica host if available
+    port: 5432
+
+# -- Redis configuration
+redis:
+  enabled: true
+  host: "redis.redis.svc.cluster.local"
+  port: 6379
+  password: "os.environ/REDIS_PASSWORD"
+
+# -- Gateway service (LLM data plane)
+gateway:
+  image:
+    repository: ghcr.io/berriai/litellm
+    tag: "main-stable"
+    pullPolicy: IfNotPresent
+  numWorkers: 2
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  livenessProbe:
+    httpGet:
+      path: /health/liveliness
+      port: 4000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health/readiness
+      port: 4000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  config:
+    proxy_config:
+      model_list:
+        - model_name: gpt-4o
+          litellm_params:
+            model: openai/gpt-4o
+            api_key: os.environ/OPENAI_API_KEY
+        - model_name: gpt-4o-mini
+          litellm_params:
+            model: openai/gpt-4o-mini
+            api_key: os.environ/OPENAI_API_KEY
+        - model_name: claude-sonnet
+          litellm_params:
+            model: anthropic/claude-sonnet-4-20250514
+            api_key: os.environ/ANTHROPIC_API_KEY
+        - model_name: claude-haiku
+          litellm_params:
+            model: anthropic/claude-3-5-haiku-20241022
+            api_key: os.environ/ANTHROPIC_API_KEY
+
+      router_settings:
+        routing_strategy: latency-based-routing
+        fallbacks:
+          - gpt-4o: [claude-sonnet]
+          - claude-sonnet: [gpt-4o]
+        redis_host: os.environ/REDIS_HOST
+        redis_port: os.environ/REDIS_PORT
+        redis_password: os.environ/REDIS_PASSWORD
+        num_retries: 2
+        timeout: 60
+        allowed_fails: 3
+        cooldown_time: 30
+
+      litellm_settings:
+        drop_params: true
+        success_callback: ["langfuse"]
+        failure_callback: ["langfuse"]
+        cache: true
+        cache_params:
+          type: redis
+          host: os.environ/REDIS_HOST
+          port: os.environ/REDIS_PORT
+          password: os.environ/REDIS_PASSWORD
+          ttl: 600
+          supported_call_types: ["acompletion", "aembedding"]
+
+      general_settings:
+        master_key: os.environ/LITELLM_MASTER_KEY
+        database_url: os.environ/DATABASE_URL
+        store_model_in_db: true
+        alerting: ["slack"]
+        alerting_threshold: 300
+        budget_duration: 30d
+        max_budget: 10000
+        redact_messages_in_exceptions: true
+
+# -- Backend service (management/control plane)
+backend:
+  image:
+    repository: ghcr.io/berriai/litellm
+    tag: "main-stable"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  hpa:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
+# -- UI service (admin dashboard)
+ui:
+  image:
+    repository: ghcr.io/berriai/litellm-ui
+    tag: "main-stable"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+  hpa:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+
+# -- Migrations job
+migrations:
+  enabled: true
+  image:
+    repository: ghcr.io/berriai/litellm-migrations
+    tag: "main-stable"
+
+# -- Ingress configuration
+ingress:
+  enabled: true
+  className: nginx  # Change to 'alb' for AWS, 'gce' for GCP
+  host: ai-gateway.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    - secretName: litellm-tls
+      hosts:
+        - ai-gateway.example.com
+
+# -- Service account
+serviceAccount:
+  create: true
+  name: litellm
+
+# -- Pod security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# -- Secrets (reference external secrets or create inline)
+secrets:
+  envSecrets:
+    - litellm-provider-keys
+    - litellm-db-credentials
