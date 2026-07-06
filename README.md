@@ -14,6 +14,7 @@ Each platform directory contains complete deployment guides, configuration refer
 | [KAITO](kaito/README.md) | Kubernetes AI Toolchain Operator — CNCF Sandbox project that automates LLM inference, fine-tuning, and RAG with automatic GPU node provisioning via Karpenter | [Full Docs](kaito/README.md) |
 | [Roboflow Supervision](roboflow-supervision/README.md) | Model-agnostic Python CV toolkit — unified Detections API, 20+ annotators, object tracking, zone counting, and dataset management for production computer vision | [Full Docs](roboflow-supervision/README.md) |
 | [LiteLLM](litellm/README.md) | Unified LLM API Gateway — single OpenAI-compatible endpoint for 100+ providers with virtual keys, spend tracking, latency-based routing, and componentized Kubernetes deployment | [Full Docs](litellm/README.md) |
+| [Komputer.AI](komputer-ai/README.md) | Distributed Claude AI Agents on Kubernetes — stateless, CRD-driven platform with persistent agent workspaces, manager/worker orchestration, MCP connectors, and real-time event streaming | [Full Docs](komputer-ai/README.md) |
 
 ## Repository Structure
 
