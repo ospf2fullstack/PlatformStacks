@@ -1,0 +1,139 @@
+# Komputer.AI Helm Values
+# Full configuration reference for deploying Komputer.AI on Kubernetes
+
+# -- Global settings
+global:
+  namespace: komputer-ai
+
+# -- Operator configuration
+operator:
+  enabled: true
+  replicas: 1
+  image:
+    repository: ghcr.io/komputer-ai/komputer-operator
+    tag: ""  # Defaults to appVersion
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  serviceAccount:
+    create: true
+    name: ""
+
+# -- API server configuration
+api:
+  enabled: true
+  replicas: 2
+  image:
+    repository: ghcr.io/komputer-ai/komputer-api
+    tag: ""
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  # -- Name of the Kubernetes secret containing ANTHROPIC_API_KEY
+  anthropicSecret: ""
+  # -- Additional environment variables
+  extraEnv: []
+
+# -- Web dashboard configuration
+ui:
+  enabled: true
+  replicas: 1
+  image:
+    repository: ghcr.io/komputer-ai/komputer-ui
+    tag: ""
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: komputer.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+# -- Redis configuration (event streaming backbone)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+  # -- External Redis (when redis.enabled=false)
+  external:
+    host: ""
+    port: 6379
+    password: ""
+
+# -- Agent defaults
+agent:
+  # -- Default Claude model for new agents
+  defaultModel: claude-sonnet-4-6
+  # -- Default PVC size for agent workspaces
+  defaultStorageSize: 5Gi
+  # -- Storage class for agent PVCs (empty = cluster default)
+  storageClassName: ""
+  # -- Maximum concurrent agents across the cluster
+  maxConcurrentAgents: 10
+  # -- Default idle sleep timeout
+  defaultSleepAfterIdle: 10m
+  # -- Default max task duration
+  defaultMaxTaskDuration: 30m
+  # -- Default resource requests for agent pods
+  defaultResources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+# -- CRD installation
+crds:
+  install: true
+  # -- Keep CRDs on helm uninstall
+  keep: true
+
+# -- Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  fsGroup: 1000
+
+# -- Container security context
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# -- Node selector for all components
+nodeSelector: {}
+
+# -- Tolerations for all components
+tolerations: []
+
+# -- Affinity rules for all components
+affinity: {}
