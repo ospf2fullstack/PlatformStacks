@@ -1,0 +1,23 @@
+apiVersion: v2
+name: komputer-ai
+description: Distributed Claude AI Agents on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "0.17.0"
+keywords:
+  - ai
+  - agents
+  - claude
+  - kubernetes
+  - operator
+home: https://github.com/kontroloop-ai/komputer-ai
+sources:
+  - https://github.com/kontroloop-ai/komputer-ai
+maintainers:
+  - name: Gary Innerarity
+    url: https://garyinnerarity.com
+dependencies:
+  - name: redis
+    version: "~18.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled

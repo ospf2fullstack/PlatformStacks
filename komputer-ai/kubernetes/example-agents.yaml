@@ -1,0 +1,124 @@
+---
+# Example KomputerAgent - Research Agent
+apiVersion: komputer.ai/v1
+kind: KomputerAgent
+metadata:
+  name: research-agent
+  namespace: komputer-ai
+  labels:
+    app.kubernetes.io/part-of: komputer-ai
+    komputer.ai/role: worker
+spec:
+  model: claude-sonnet-4-6
+  instructions: |
+    You are a research agent specializing in technical documentation.
+    When given a topic, provide comprehensive analysis including:
+    - Current state and recent developments
+    - Key architectural decisions
+    - Comparison with alternatives
+    - Practical recommendations
+  systemPrompt: |
+    You are thorough, precise, and always cite sources.
+    Format output as structured markdown.
+  workspace:
+    storageSize: "5Gi"
+  lifecycle:
+    sleepAfterIdle: "15m"
+    maxTaskDuration: "30m"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+---
+# Example KomputerAgent - Manager Agent
+apiVersion: komputer.ai/v1
+kind: KomputerAgent
+metadata:
+  name: project-manager
+  namespace: komputer-ai
+  labels:
+    app.kubernetes.io/part-of: komputer-ai
+    komputer.ai/role: manager
+spec:
+  model: claude-sonnet-4-6
+  instructions: |
+    You are a project manager agent. Break complex tasks into
+    sub-tasks, delegate to worker agents, and synthesize their
+    results into a cohesive deliverable.
+  role: manager
+  maxSubAgents: 3
+  subAgentTemplate:
+    model: claude-haiku-4-5-20251001
+    workspace:
+      storageSize: "2Gi"
+    lifecycle:
+      maxTaskDuration: "15m"
+  workspace:
+    storageSize: "10Gi"
+  lifecycle:
+    sleepAfterIdle: "30m"
+    maxTaskDuration: "60m"
+
+---
+# Example KomputerSkill
+apiVersion: komputer.ai/v1
+kind: KomputerSkill
+metadata:
+  name: kubernetes-analysis
+  namespace: komputer-ai
+spec:
+  description: "Analyze Kubernetes clusters for cost optimization and best practices"
+  content: |
+    When analyzing a Kubernetes cluster:
+    1. Check resource requests vs actual usage
+    2. Identify over-provisioned workloads
+    3. Look for idle/unused resources
+    4. Suggest right-sizing recommendations
+    5. Check for spot/preemptible node opportunities
+
+---
+# Example KomputerConnector (GitHub MCP)
+apiVersion: komputer.ai/v1
+kind: KomputerConnector
+metadata:
+  name: github-mcp
+  namespace: komputer-ai
+spec:
+  type: mcp
+  server:
+    url: "https://mcp.github.com"
+  auth:
+    type: oauth
+    secretRef: github-oauth-secret
+  capabilities:
+    - read_repos
+    - create_issues
+    - read_prs
+
+---
+# Example scheduled agent (cron)
+apiVersion: komputer.ai/v1
+kind: KomputerAgent
+metadata:
+  name: daily-digest
+  namespace: komputer-ai
+  labels:
+    komputer.ai/role: scheduled
+spec:
+  model: claude-haiku-4-5-20251001
+  instructions: |
+    Summarize the key events from the last 24 hours across
+    all connected services. Focus on: new issues, merged PRs,
+    and any alerts or incidents.
+  schedule: "0 8 * * *"
+  timezone: "America/Chicago"
+  workspace:
+    storageSize: "2Gi"
+  connectors:
+    - github-mcp
+  lifecycle:
+    maxTaskDuration: "10m"
