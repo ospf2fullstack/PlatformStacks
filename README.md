@@ -15,6 +15,7 @@ Each platform directory contains complete deployment guides, configuration refer
 | [Roboflow Supervision](roboflow-supervision/README.md) | Model-agnostic Python CV toolkit — unified Detections API, 20+ annotators, object tracking, zone counting, and dataset management for production computer vision | [Full Docs](roboflow-supervision/README.md) |
 | [LiteLLM](litellm/README.md) | Unified LLM API Gateway — single OpenAI-compatible endpoint for 100+ providers with virtual keys, spend tracking, latency-based routing, and componentized Kubernetes deployment | [Full Docs](litellm/README.md) |
 | [Komputer.AI](komputer-ai/README.md) | Distributed Claude AI Agents on Kubernetes — stateless, CRD-driven platform with persistent agent workspaces, manager/worker orchestration, MCP connectors, and real-time event streaming | [Full Docs](komputer-ai/README.md) |
+| [KServe](kserve-inference-platform/README.md) | CNCF Incubating inference platform — unified predictive + generative AI serving with InferenceService CRD, LLMInferenceService for LLMs, canary rollouts, scale-to-zero, and KV-cache aware routing | [Full Docs](kserve-inference-platform/README.md) |
 
 ## Repository Structure
 
