@@ -39,11 +39,11 @@ echo "[4/7] Installing KServe CRDs..."
 helm install kserve-crd oci://ghcr.io/kserve/charts/kserve-crd --version "${KSERVE_VERSION}"
 
 echo "[5/7] Installing KServe controller (Standard mode)..."
-helm install kserve oci://ghcr.io/kserve/charts/kserve-resources \
+helm upgrade --install kserve oci://ghcr.io/kserve/charts/kserve-resources \
   --version "${KSERVE_VERSION}" \
-  -f "$(dirname "$0")/../helm/values-standard.yaml"
-echo "Waiting for KServe controller..."
-kubectl wait --for=condition=Available deployment/kserve-controller-manager -n "${NAMESPACE}" --timeout=180s
+  --namespace "${NAMESPACE}" --create-namespace \
+  -f "$(dirname "$0")/../helm/values-standard.yaml" \
+  --wait --timeout 5m
 
 echo "[6/7] Installing LLMInferenceService CRDs..."
 helm install kserve-llmisvc-crd oci://ghcr.io/kserve/charts/kserve-llmisvc-crd --version "${KSERVE_VERSION}"
