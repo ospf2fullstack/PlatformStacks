@@ -26,11 +26,10 @@ kubectl wait --for=condition=Available deployment/cert-manager -n cert-manager -
 kubectl wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
 
 echo "[2/7] Installing Envoy Gateway..."
-helm install eg oci://docker.io/envoyproxy/gateway-helm \
+helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
   --version "${ENVOY_GATEWAY_VERSION}" \
-  -n envoy-gateway-system --create-namespace
-echo "Waiting for Envoy Gateway to be ready..."
-kubectl wait --for=condition=Available deployment -l app.kubernetes.io/name=gateway-helm -n envoy-gateway-system --timeout=120s
+  -n envoy-gateway-system --create-namespace \
+  --wait --timeout 5m
 
 echo "[3/7] Creating KServe namespace and Gateway..."
 kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
