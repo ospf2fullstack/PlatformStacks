@@ -1,0 +1,206 @@
+# LiteLLM Microservices Helm Values
+# Chart: oci://ghcr.io/berriai/litellm/chart/litellm
+# Version: 1.93.0
+# 
+# This deploys LiteLLM as three independent microservices:
+# - Gateway (port 4000) — LLM data plane
+# - Backend (port 4001) — Management/admin API
+# - UI (port 3000) — Next.js dashboard
+
+masterKey:
+  secretName: litellm-master-key-secret
+  secretKey: master-key
+
+database:
+  writer:
+    host: litellm-pg-rw.litellm.svc
+    port: 5432
+    dbname: litellm
+    passwordSecret:
+      name: litellm-writer-secret
+      usernameKey: username
+      passwordKey: password
+  reader:
+    host: litellm-pg-ro.litellm.svc
+    port: 5432
+    dbname: litellm
+    passwordSecret:
+      name: litellm-reader-secret
+      usernameKey: username
+      passwordKey: password
+
+redis:
+  host: redis-ha.litellm.svc
+  port: 6379
+  passwordSecret:
+    name: litellm-redis-secret
+    key: password
+
+# Gateway — LLM Data Plane
+gateway:
+  replicas: 2
+  image:
+    repository: docker.litellm.ai/berriai/litellm
+    tag: "main-v1.93.0"
+  port: 4000
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "1Gi"
+    limits:
+      cpu: "4000m"
+      memory: "4Gi"
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+  pdb:
+    enabled: true
+    minAvailable: 1
+  livenessProbe:
+    httpGet:
+      path: /health/liveliness
+      port: 4000
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health/readiness
+      port: 4000
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    failureThreshold: 3
+  extraEnv:
+    - name: DISABLE_SCHEMA_UPDATE
+      value: "true"
+
+# Backend — Management Plane
+backend:
+  replicas: 2
+  image:
+    repository: docker.litellm.ai/berriai/litellm
+    tag: "main-v1.93.0"
+  port: 4001
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  hpa:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+  pdb:
+    enabled: true
+    minAvailable: 1
+  livenessProbe:
+    httpGet:
+      path: /health/liveliness
+      port: 4001
+    initialDelaySeconds: 60
+    periodSeconds: 15
+    failureThreshold: 5
+  readinessProbe:
+    httpGet:
+      path: /health/readiness
+      port: 4001
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 3
+  extraEnv:
+    - name: DISABLE_SCHEMA_UPDATE
+      value: "true"
+
+# UI — Dashboard
+ui:
+  replicas: 2
+  image:
+    repository: docker.litellm.ai/berriai/litellm
+    tag: "main-v1.93.0"
+  port: 3000
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# Migrations Job
+migrations:
+  image:
+    repository: docker.litellm.ai/berriai/litellm-migrations
+    tag: "main-v1.93.0"
+  hooks:
+    preInstall: true
+    preUpgrade: true
+  extraEnv:
+    - name: DISABLE_SCHEMA_UPDATE
+      value: "false"  # CRITICAL: must be false for migrations to run
+
+# Ingress — routes traffic to appropriate components
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  host: llm.example.com
+  tls:
+    enabled: true
+    secretName: litellm-tls
+  # Routing rules:
+  # /v1/* → gateway
+  # /chat/* → gateway
+  # /embeddings/* → gateway
+  # /audio/* → gateway
+  # /health/* → gateway
+  # /metrics → gateway
+  # /ui/* → ui
+  # /* (catch-all) → backend
+
+# Proxy configuration (shared across gateway/backend)
+proxyConfig:
+  model_list:
+    - model_name: gpt-4o
+      litellm_params:
+        model: openai/gpt-4o
+        api_key: os.environ/OPENAI_API_KEY
+    - model_name: claude-sonnet-5
+      litellm_params:
+        model: anthropic/claude-sonnet-5
+        api_key: os.environ/ANTHROPIC_API_KEY
+    - model_name: gpt-4o-mini
+      litellm_params:
+        model: openai/gpt-4o-mini
+        api_key: os.environ/OPENAI_API_KEY
+    - model_name: gemini-3.5-flash
+      litellm_params:
+        model: vertex_ai/gemini-3.5-flash
+
+  litellm_settings:
+    drop_params: true
+    num_retries: 2
+    request_timeout: 60
+    cache: true
+    cache_params:
+      type: redis
+      namespace: litellm_cache
+      ttl: 3600
+
+  router_settings:
+    routing_strategy: least-busy
+    num_retries: 2
+    timeout: 60
+    allowed_fails: 3
+
+  general_settings:
+    alerting:
+      - slack
+    alerting_threshold: 300

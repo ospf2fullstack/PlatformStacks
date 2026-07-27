@@ -1,71 +1,80 @@
 # LiteLLM - Unified LLM API Gateway
 
-LiteLLM is an open-source AI gateway that provides a single, OpenAI-compatible API interface for 100+ LLM providers. It handles authentication, request translation, routing, load balancing, spend tracking, and observability — so your applications talk to one endpoint instead of managing multiple provider integrations.
+## Overview
+
+LiteLLM is an open-source AI Gateway that provides a single, unified interface to call 100+ LLM providers — OpenAI, Anthropic, Gemini, Bedrock, Azure, Vertex AI, vLLM, and more — using the OpenAI-compatible format. It can be deployed as a Python SDK or as a self-hosted proxy server (AI Gateway) with virtual keys, spend tracking, guardrails, and load balancing.
+
+- **Repository:** [github.com/BerriAI/litellm](https://github.com/BerriAI/litellm)
+- **License:** MIT-based (Other)
+- **Stars:** 54,800+ | **Forks:** 10,100+
+- **Latest Stable:** v1.93.0 (July 2026)
+- **Documentation:** [docs.litellm.ai](https://docs.litellm.ai)
+- **Blog Post:** [https://garyinnerarity.com/blog/?post=litellm-unified-llm-gateway](https://garyinnerarity.com/blog/?post=litellm-unified-llm-gateway)
 
 ## Prerequisites
 
-- Kubernetes cluster (v1.24+)
-- Helm 3.8+ (OCI registry support)
-- PostgreSQL database (required for virtual keys, spend tracking, rate limiting)
-- Redis (recommended for caching and distributed rate limiting)
-- At least one LLM provider API key (OpenAI, Anthropic, Azure, Bedrock, etc.)
+| Requirement | Version | Notes |
+|---|---|---|
+| Kubernetes | ≥ 1.28 | EKS, GKE, AKS, or k3s |
+| Helm | ≥ 3.14 | For chart-based deployment |
+| PostgreSQL | ≥ 15 | Required for auth, keys, spend tracking |
+| Redis | ≥ 7.2 | Required for multi-replica: rate limiting, caching, router state |
+| kubectl | Latest | Cluster access |
+| LLM Provider API Keys | — | OpenAI, Anthropic, Azure, etc. |
 
-## Architecture Overview
+## Architecture
+
+LiteLLM supports two deployment modes:
+
+### Monolithic Mode
+Single container serving LLM traffic, management APIs, and the UI on port 4000.
 
 ```
-┌─────────────────────┐     ┌─────────────────────┐
-│   Client Apps       │     │   Admin Dashboard    │
-│   (OpenAI SDK)      │     │   (Next.js UI)       │
-└────────┬────────────┘     └────────┬─────────────┘
-         │                           │
-         ▼                           ▼
-┌─────────────────────────────────────────────────┐
-│              Ingress / Load Balancer             │
-│         (routes by path prefix)                 │
-└──────┬────────────────┬───────────────┬─────────┘
-       │                │               │
-       ▼                ▼               ▼
-┌────────────┐  ┌────────────┐  ┌────────────┐
-│  Gateway   │  │  Backend   │  │     UI     │
-│  Port 4000 │  │  Port 4001 │  │  Port 3000 │
-│  LLM Data  │  │  Mgmt API  │  │  Dashboard │
-│  Plane     │  │  Control   │  │  (nginx)   │
-└──────┬─────┘  └──────┬─────┘  └────────────┘
-       │                │
-       ▼                ▼
-┌────────────┐  ┌────────────┐
-│ PostgreSQL │  │   Redis    │
-│ (HA/RDS)   │  │  (Cache)   │
-└────────────┘  └────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────────────┐
-│              LLM Providers                       │
-│  OpenAI │ Anthropic │ Azure │ Bedrock │ Vertex  │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│         LiteLLM Proxy (4000)        │
+│  ┌─────────┐ ┌──────────┐ ┌────┐   │
+│  │ Gateway │ │ Backend  │ │ UI │   │
+│  │(data)   │ │(mgmt)    │ │    │   │
+│  └─────────┘ └──────────┘ └────┘   │
+└──────────────────┬──────────────────┘
+                   │
+        ┌──────────┼──────────┐
+        │          │          │
+   ┌────▼────┐ ┌──▼───┐ ┌───▼────┐
+   │PostgreSQL│ │Redis │ │Providers│
+   └─────────┘ └──────┘ └────────┘
 ```
 
-### Componentized Architecture (Recommended for Production)
+### Microservices Mode (Recommended for Production)
+Three independent services with separate scaling and fault isolation:
 
-LiteLLM offers a microservices deployment model with three independent services:
+```
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│   Gateway   │  │   Backend   │  │     UI      │
+│  Port 4000  │  │  Port 4001  │  │  Port 3000  │
+│  Data Plane │  │  Mgmt Plane │  │  Dashboard  │
+│  HPA: 1-10  │  │  HPA: 1-4   │  │  Replicas:2 │
+└──────┬──────┘  └──────┬──────┘  └─────────────┘
+       │                 │
+       ├─────────┬───────┘
+       │         │
+  ┌────▼────┐ ┌──▼───┐
+  │PostgreSQL│ │Redis │
+  │(RW + RO) │ │ (HA) │
+  └─────────┘ └──────┘
+```
 
-| Component  | Port | Surface |
-|-----------|------|---------|
-| Gateway   | 4000 | LLM data plane — `/chat/completions`, `/v1/messages`, embeddings, audio, batches |
-| Backend   | 4001 | Management API — keys, users, teams, orgs, SSO, audit logs, spend analytics |
-| UI        | 3000 | Next.js dashboard, static export served by nginx |
-| Migrations| Job  | `prisma migrate deploy`, runs as pre-install/pre-upgrade Helm hook |
+**Key Benefits of Microservices:**
+- Gateway failures don't impact management plane (and vice versa)
+- Independent HPA scaling per component
+- Blast radius containment — a slow analytics query won't kill inference pods
+- Optional read replica support for backend analytics isolation
 
-Each service scales independently with its own HPA, health checks, and failure isolation.
-
-## Quick-Start Deployment
-
-### Option 1: Helm Chart (Microservices)
+## Quick Start (Monolithic Helm)
 
 ```bash
-# Add the LiteLLM Helm repo
-helm repo add litellm https://berriai.github.io/litellm-helm
-helm repo update
+# Add the Helm repo
+helm repo add litellm oci://ghcr.io/berriai/litellm-helm
 
 # Create namespace
 kubectl create namespace litellm
@@ -73,146 +82,109 @@ kubectl create namespace litellm
 # Create secrets
 kubectl create secret generic litellm-secrets \
   --namespace litellm \
-  --from-literal=master-key="sk-your-master-key" \
-  --from-literal=database-url="postgresql://user:pass@host:5432/litellm" \
-  --from-literal=openai-api-key="sk-..." \
-  --from-literal=anthropic-api-key="sk-ant-..."
+  --from-literal=OPENAI_API_KEY="sk-..." \
+  --from-literal=ANTHROPIC_API_KEY="sk-ant-..." \
+  --from-literal=LITELLM_MASTER_KEY="sk-master-..."
 
-# Install with custom values
-helm install litellm litellm/litellm \
+# Install with Helm
+helm install litellm-proxy oci://ghcr.io/berriai/litellm-helm \
   --namespace litellm \
-  --values helm/values.yaml
+  --version 1.93.0 \
+  -f helm/values.yaml
 ```
 
-### Option 2: Kubernetes Manifests (Simple)
+## Quick Start (Microservices Helm)
 
 ```bash
-# Apply in order
-kubectl apply -f kubernetes/namespace.yaml
-kubectl apply -f kubernetes/secrets.yaml
-kubectl apply -f kubernetes/configmap.yaml
-kubectl apply -f kubernetes/deployment.yaml
-kubectl apply -f kubernetes/service.yaml
-kubectl apply -f kubernetes/hpa.yaml
+# Install componentized chart
+helm install litellm oci://ghcr.io/berriai/litellm/chart/litellm \
+  --namespace litellm \
+  --version 1.93.0 \
+  -f helm/values-microservices.yaml
 ```
 
 ## Configuration Reference
 
 ### Key Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `LITELLM_MASTER_KEY` | Yes | Master API key for admin access |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `REDIS_HOST` | No | Redis host for caching/rate limiting |
-| `REDIS_PORT` | No | Redis port (default: 6379) |
-| `REDIS_PASSWORD` | No | Redis authentication password |
-| `OPENAI_API_KEY` | No | OpenAI provider key |
-| `ANTHROPIC_API_KEY` | No | Anthropic provider key |
-| `AZURE_API_KEY` | No | Azure OpenAI key |
-| `AWS_ACCESS_KEY_ID` | No | For Bedrock access |
+| Variable | Description | Required |
+|---|---|---|
+| `LITELLM_MASTER_KEY` | Master API key for admin access | Yes |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `REDIS_HOST` | Redis hostname | Yes (multi-replica) |
+| `REDIS_PORT` | Redis port (default: 6379) | No |
+| `REDIS_PASSWORD` | Redis auth password | If auth enabled |
+| `OPENAI_API_KEY` | OpenAI provider key | Per provider |
+| `ANTHROPIC_API_KEY` | Anthropic provider key | Per provider |
+| `AZURE_API_KEY` | Azure OpenAI key | Per provider |
+| `DISABLE_SCHEMA_UPDATE` | Skip DB migrations on startup | Yes (for pods) |
 
-### Core proxy_config.yaml Settings
+### Key Helm Values
 
-```yaml
-model_list:
-  - model_name: gpt-4o
-    litellm_params:
-      model: openai/gpt-4o
-      api_key: os.environ/OPENAI_API_KEY
+| Value | Description | Default |
+|---|---|---|
+| `replicaCount` | Number of proxy replicas | 2 |
+| `autoscaling.enabled` | Enable HPA | false |
+| `autoscaling.minReplicas` | HPA min replicas | 1 |
+| `autoscaling.maxReplicas` | HPA max replicas | 10 |
+| `proxy.secretName` | K8s secret for API keys | litellm-secrets |
+| `db.useExisting` | Use external PostgreSQL | true |
+| `redis.host` | Redis endpoint | — |
+| `serviceMonitor.enabled` | Prometheus ServiceMonitor | false |
+| `pdb.enabled` | PodDisruptionBudget | true |
+| `ingress.enabled` | Enable Ingress resource | false |
 
-  - model_name: claude-sonnet
-    litellm_params:
-      model: anthropic/claude-sonnet-4-20250514
-      api_key: os.environ/ANTHROPIC_API_KEY
-
-router_settings:
-  routing_strategy: latency-based-routing
-  fallbacks:
-    - gpt-4o: [claude-sonnet]
-  num_retries: 2
-  timeout: 60
-  allowed_fails: 3
-  cooldown_time: 30
-
-litellm_settings:
-  drop_params: true
-  cache: true
-  cache_params:
-    type: redis
-    host: os.environ/REDIS_HOST
-    port: os.environ/REDIS_PORT
-    password: os.environ/REDIS_PASSWORD
-    ttl: 600
-
-general_settings:
-  master_key: os.environ/LITELLM_MASTER_KEY
-  database_url: os.environ/DATABASE_URL
-  store_model_in_db: true
-  alerting: ["slack"]
-  max_budget: 10000
-```
-
-## Validation / Testing
+## Validation & Testing
 
 ```bash
-# Check pod health
+# Check pod status
 kubectl get pods -n litellm
-kubectl logs -n litellm -l app=litellm --tail=50
 
-# Test health endpoint
-curl http://litellm.litellm.svc.cluster.local:4000/health/liveliness
+# Verify health endpoints
+kubectl port-forward svc/litellm-service 4000:4000 -n litellm
+curl http://localhost:4000/health/readiness
+curl http://localhost:4000/health/liveliness
 
-# Test model list
-curl -H "Authorization: Bearer sk-your-master-key" \
-  http://litellm.litellm.svc.cluster.local:4000/v1/models
+# List available models
+curl http://localhost:4000/models \
+  -H "Authorization: Bearer sk-master-..."
 
-# Test chat completion
-curl -X POST http://litellm.litellm.svc.cluster.local:4000/v1/chat/completions \
-  -H "Authorization: Bearer sk-your-master-key" \
+# Test a completion
+curl http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-master-..." \
   -d '{
     "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 
-# Check Prometheus metrics
-curl http://litellm.litellm.svc.cluster.local:4000/metrics
+# Test the Admin UI
+open http://localhost:4000/ui
 ```
 
 ## Troubleshooting
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Pods crash with DB error | Invalid DATABASE_URL | Verify PostgreSQL connection string and network policies |
-| Virtual keys not working | Missing PostgreSQL | PostgreSQL is required for key management — deploy it first |
-| High latency on completions | Control plane blocking data plane | Use componentized deployment (gateway/backend split) |
-| Cache not working | Redis not configured | Add REDIS_HOST, REDIS_PORT environment variables |
-| Provider timeout | Upstream provider slow | Configure `timeout` and `fallbacks` in router_settings |
-| 429 rate limit errors | Provider rate limits | Add multiple deployments of same model for load balancing |
-| Dashboard not loading | Backend service down | Check backend pod logs; UI depends on backend API |
+| Issue | Cause | Fix |
+|---|---|---|
+| CrashLoopBackOff | Missing secrets or DB connection | Verify `litellm-secrets` exists and DATABASE_URL is correct |
+| 401 on /chat/completions | API key format issue | Use `os.environ/VAR_NAME` syntax in config.yaml |
+| Models not in /models | ConfigMap not mounted | Check `kubectl describe configmap litellm-config` |
+| High latency (>5s) | No Redis caching | Deploy Redis and set `redis_host` in values |
+| Ingress 404 | Missing path rule | Add `/` or `/*` path; LiteLLM listens on `:4000` |
+| Migrations not running | `DISABLE_SCHEMA_UPDATE=true` on migration job | Override to `false` for the migration Job |
+| Pod killed during analytics | Monolithic mode event loop blocking | Switch to microservices deployment |
 
-## Performance Benchmarks
+## Performance
 
-- **8ms P95 latency** overhead at 1,000 RPS (gateway only)
-- Stateless architecture enables horizontal scaling via HPA
-- Stable release images undergo 12-hour load tests before publishing
+- **P95 Latency:** 8ms overhead at 1,000 RPS (benchmarked)
+- **Proxy overhead:** ~100ms for routing logic (negligible for most use cases)
+- **Redis caching:** Reduces token costs by up to 35%
+- **Headroom feature:** Cuts 60-95% of tokens via prompt compression
 
-## Key Features
+## Further Reading
 
-- **100+ LLM providers** via unified OpenAI-compatible API
-- **Virtual keys** with per-team/per-user budget controls
-- **Latency-based routing** with automatic fallbacks
-- **Spend tracking** with real-time cost analytics
-- **Guardrails** for content moderation and safety
-- **A/B testing** via traffic mirroring
-- **Redis caching** for prompt/response deduplication
-- **Prometheus metrics** and Langfuse/DataDog integrations
-- **Admin dashboard** for monitoring and management
-- **Apache 2.0** open-source license
-
-## Related
-
-- **Blog Post:** [LiteLLM: The Unified LLM Gateway Your Kubernetes Cluster Needs](https://garyinnerarity.com/blog/?post=litellm-unified-llm-gateway)
-- **Official Docs:** [docs.litellm.ai](https://docs.litellm.ai)
-- **GitHub:** [github.com/BerriAI/litellm](https://github.com/BerriAI/litellm)
+- [Production Deployment Guide](https://docs.litellm.ai/docs/proxy/deploy)
+- [Componentized Deployment Blog](https://docs.litellm.ai/blog/componentized-deployment)
+- [Release Notes](https://docs.litellm.ai/release_notes/)
+- [Helm Chart Values Reference](https://docs.litellm.ai/docs/proxy/microservices_helm)
+- [Blog Post: LiteLLM on garyinnerarity.com](https://garyinnerarity.com/blog/?post=litellm-unified-llm-gateway)
