@@ -11,13 +11,9 @@ Engineering deployment documentation, Helm charts, Terraform modules, and deploy
 | [Hearth](/hearth/README.md) | Declarative LLM Serving on Kubernetes | [Full Docs](/hearth/README.md) |
 | [Komputer.AI](/komputer-ai/README.md) | Distributed Claude AI Agents on K8s | [Full Docs](/komputer-ai/README.md) |
 | [Kthena](/kthena-llm-inference/README.md) | Kubernetes-Native LLM Inference with PD Disaggregation | [Full Docs](/kthena-llm-inference/README.md) |
-<<<<<<< HEAD
-| [KServe](/kserve-inference-platform/README.md) | CNCF Inference Service Platform for Kubernetes | [Full Docs](/kserve-inference-platform/README.md) |
+| [KServe](/kserve-inference-platform/README.md) | CNCF Incubating inference platform for predictive and generative AI model serving on Kubernetes | [Full Docs](/kserve-inference-platform/README.md) |
 | [KAITO](/kaito/README.md) | Auto-Provisioning GPU AI Inference on Kubernetes | [Full Docs](/kaito/README.md) |
 | [LiteLLM](/litellm/README.md) | Unified LLM API Gateway for 100+ Providers | [Full Docs](/litellm/README.md) |
-=======
-| [KServe](/kserve-inference-platform/README.md) | CNCF Incubating inference platform for predictive and generative AI model serving on Kubernetes | [Full Docs](/kserve-inference-platform/README.md) |
->>>>>>> origin/main
 
 ## Structure
 
